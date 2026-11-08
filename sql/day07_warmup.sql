@@ -1,0 +1,86 @@
+#Query to get the names of customers from Hyderabad city and order them by their signup date in descending order.
+
+SELECT
+NAME
+FROM CUSTOMERS
+WHERE CITY = 'Hyderabad'
+ORDER BY SIGNUP_DATE DESC;
+
+#Query to get the total number of orders for each status in the ORDERS table.
+SELECT
+STATUS,COUNT(ORDER_ID) AS TOTAL_ORDERS
+FROM ORDERS
+GROUP BY STATUS;
+
+#Query to get the top 5 most expensive products from the PRODUCTS table.
+SELECT
+NAME,PRICE
+FROM PRODUCTS
+ORDER BY PRICE DESC
+LIMIT 5;
+
+# Query to get the total sales for each product category from the PRODUCTS, ORDER_ITEMS,
+# and ORDERS tables, considering only completed orders.
+
+
+SELECT
+CATEGORY, (QuANTITY * UNIT_PRICE) AS TOTAL_SALES
+FROM PRODUCTS,ORDER_ITEMS,ORDERS
+WHERE PRODUCTS.PRODUCT_ID = ORDER_ITEMS.PRODUCT_ID
+AND ORDERS.ORDER_ID = ORDER_ITEMS.ORDER_ID
+AND ORDERS.STATUS = 'completed'
+
+#Query to get the names of customers who have not placed any orders.
+SELECT
+NAME
+FROM CUSTOMERS LEFT JOIN ORDERS ON CUSTOMERS.CUSTOMER_ID = ORDERS.CUSTOMER_ID
+WHERE ORDERS.ORDER_ID IS NULL;
+
+#Query to get the top 10 customers based on their total spending.
+SELECT
+NAME
+FROM CUSTOMERS,ORDERS,ORDER_ITEMS
+WHERE CUSTOMERS.CUSTOMER_ID = ORDERS.CUSTOMER_ID
+AND ORDERS.ORDER_ID = ORDER_ITEMS.ORDER_ID
+GROUP BY NAME
+ORDER BY SUM(QUANTITY * UNIT_PRICE) DESC
+LIMIT 10;
+
+#Query to get the total number of orders and total sales for each month 
+#from the ORDERS and ORDER_ITEMS tables.
+SELECT
+EXTRACT(MONTH FROM ORDER_DATE) AS MONTH,COUNT(ORDERS.ORDER_ID) AS ORDER_COUNT, SUM(QUANTITY * UNIT_PRICE) AS TOTAL_SALES
+FROM ORDERS,ORDER_ITEMS
+WHERE ORDERS.ORDER_ID = ORDER_ITEMS.ORDER_ID
+GROUP BY extract(MONTH FROM ORDER_DATE)
+ORDER BY extract(MONTH FROM ORDER_DATE);
+
+#Query to get the names of products that have never been ordered.
+SELECT
+NAME
+FROM PRODUCTS LEFT JOIN ORDER_ITEMS ON PRODUCTS.PRODUCT_ID = ORDER_ITEMS.PRODUCT_ID
+WHERE ORDER_ITEMS.ORDER_ID IS NULL;
+
+#Query to get the average sales for each city from the 
+#CUSTOMERS, ORDERS, and ORDER_ITEMS tables.
+SELECT
+CITY, ROUND(AVG(QUANTITY * UNIT_PRICE), 2) AS AVG_SALES
+FROM CUSTOMERS,ORDERS,ORDER_ITEMS
+WHERE CUSTOMERS.CUSTOMER_ID = ORDERS.CUSTOMER_ID
+AND ORDERS.ORDER_ID = ORDER_ITEMS.ORDER_ID
+GROUP BY CITY;
+
+#Query to get the most recent order for each customer 
+#from the ORDERS and CUSTOMERS tables.
+SELECT NAME, ORDER_DATE, STATUS
+FROM (
+    SELECT 
+        c.NAME, 
+        o.ORDER_DATE, 
+        o.STATUS,
+        ROW_NUMBER() OVER(PARTITION BY c.CUSTOMER_ID ORDER BY o.ORDER_DATE DESC) as rn
+    FROM ORDERS o
+    JOIN CUSTOMERS c ON o.CUSTOMER_ID = c.CUSTOMER_ID
+) t
+WHERE rn = 1
+ORDER BY ORDER_DATE DESC;
